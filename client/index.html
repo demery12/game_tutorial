@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+Hello World
+<button onclick="happy()">Happy</button>
+</body>
+<script src="/socket.io/socket.io.js"></script>
+<script>
+    const socket = io();
+    const random = Math.random();
+    const happy = function() {
+        socket.emit('happy', {reason : 'its my birthday' + random});
+    }
+
+    socket.on('serverMsg', function(data){
+        console.log(data.msg);
+    })
+</script>
+</html>
