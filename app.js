@@ -11,6 +11,7 @@ server.listen(2000);
 console.log("Server started.");
 
 const SOCKET_LIST = {};
+const DEBUG = true;
 
 const Entity = function(){
     const self = {
@@ -44,6 +45,15 @@ const Player = function(id){
     self.update = function(){
         self.updateSpd();
         super_update();
+
+        if(Math.random() < 0.1){
+            self.shootBullet(Math.random()*360);
+        }
+    }
+    self.shootBullet = function(angle){
+            const b = Bullet(angle);
+            b.x = self.x;
+            b.y = self.y;
     }
 
     self.updateSpd = function() {
@@ -116,9 +126,6 @@ const Bullet = function(angle) {
 Bullet.list = {};
 
 Bullet.update = function () {
-    if(Math.random() < 0.1){
-        Bullet(Math.random()*360);
-    }
     const pack = [];
     for (let i in Bullet.list) {
         let bullet = Bullet.list[i];
@@ -143,6 +150,20 @@ io.sockets.on('connection', function (socket) {
     socket.on('disconnect', function () {
         delete SOCKET_LIST[socket.id];
         Player.onDisconnect(socket);
+    });
+
+    socket.on('sendMsgToServer', function (msg) {
+        const playerName = ("" + socket.id).slice(2,7);
+        for(let i in SOCKET_LIST){
+            SOCKET_LIST[i].emit('addToChat', playerName + ': ' + msg);
+        }
+    });
+
+    socket.on('evalServer', function(data) {
+        if(!DEBUG)
+            return;
+        const res = eval(data);
+        socket.emit('evalAnswer', res);
     });
 
 });
