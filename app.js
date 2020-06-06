@@ -92,6 +92,13 @@ async function main(){
                 self.spdY = 0;
         }
         Player.list[id] = self;
+
+        initPack.player.push({
+            id:self.id,
+            x:self.x,
+            y:self.y,
+            number:self.number,
+        })
         return self;
     }
 
@@ -115,6 +122,7 @@ async function main(){
     }
     Player.onDisconnect = function (socket) {
         delete Player.list[socket.id];
+        removePack.player.push(socket.id);
     }
     Player.update = function () {
         const pack = [];
@@ -122,9 +130,9 @@ async function main(){
             let player = Player.list[i];
             player.update();
             pack.push({
+                id:player.id,
                 x: player.x,
                 y: player.y,
-                number: player.number
             });
         }
         return pack;
@@ -153,6 +161,11 @@ async function main(){
             }
         }
         Bullet.list[self.id] = self;
+        initPack.bullet.push({
+            id:self.id,
+            x:self.x,
+            y:self.y,
+        });
         return self;
     }
 
@@ -165,7 +178,9 @@ async function main(){
             bullet.update()
             if(bullet.toRemove)
                 delete Bullet.list[i];
+                removePack.bullet.push(bullet.id)
             pack.push({
+                id: bullet.id,
                 x: bullet.x,
                 y: bullet.y,
             });
@@ -259,6 +274,9 @@ async function main(){
 
     });
 
+    const initPack = {player:[], bullet:[]};
+    const removePack = {player:[], bullet:[]};
+
     setInterval(function (){
         const pack = {
             player: Player.update(),
@@ -266,8 +284,14 @@ async function main(){
         }
         for (let i in SOCKET_LIST) {
             let socket = SOCKET_LIST[i];
-            socket.emit('newPosition', pack);
+            socket.emit('init', initPack);
+            socket.emit('update', pack);
+            socket.emit('remove', removePack);
         }
+        initPack.player = [];
+        initPack.bullet = [];
+        removePack.player = [];
+        removePack.bullet = [];
 
     }, 1000 / 25);
 }
