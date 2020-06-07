@@ -61,6 +61,9 @@ async function main(){
         self.pressingAttack = false;
         self.mouseAngle = 0;
         self.maxSpd = 10;
+        self.hp = 10;
+        self.hpMax = 10;
+        self.score = 0;
 
         let super_update = self.update;
         self.update = function(){
@@ -93,12 +96,29 @@ async function main(){
         }
         Player.list[id] = self;
 
-        initPack.player.push({
-            id:self.id,
-            x:self.x,
-            y:self.y,
-            number:self.number,
-        })
+        self.getInitPack = function() {
+            return {
+                id:self.id,
+                x:self.x,
+                y:self.y,
+                number:self.number,
+                hp:self.hp,
+                hpMax:self.hpMax,
+                score:self.score,
+            };
+        }
+
+        self.getUpdatePack = function() {
+            return {
+                id:self.id,
+                x:self.x,
+                y:self.y,
+                hp:self.hp,
+                score:self.score,
+            };
+        }
+
+        initPack.player.push(self.getInitPack());
         return self;
     }
 
@@ -119,7 +139,21 @@ async function main(){
             else if (data.inputId === 'mouseAngle')
                 player.mouseAngle = data.state;
         });
+
+        socket.emit('init', {
+            player:Player.getAllInitPack(),
+            bullet:Bullet.getAllInitPack(),
+        });
     }
+
+    Player.getAllInitPack = function() {
+        const players = [];
+        for(let i in Player.list){
+            players.push(Player.list[i].getInitPack());
+        }
+        return players
+    }
+
     Player.onDisconnect = function (socket) {
         delete Player.list[socket.id];
         removePack.player.push(socket.id);
@@ -129,11 +163,7 @@ async function main(){
         for (let i in Player.list) {
             let player = Player.list[i];
             player.update();
-            pack.push({
-                id:player.id,
-                x: player.x,
-                y: player.y,
-            });
+            pack.push(player.getUpdatePack());
         }
         return pack;
     }
@@ -155,43 +185,63 @@ async function main(){
             for(let i in Player.list){
                 const p = Player.list[i]
                 if(self.getDistance(p) < 32 && self.parent !== p.id){
-                    // handle collision. ex: hp--;
+                    // handle collision
+                    p.hp -= 1;
+                    if(p.hp <= 0){
+                        const shooter = Player.list[self.parent];
+                        if(shooter){
+                            shooter.score += 1;
+                        }
+                        p.hp = p.hpMax;
+                        p.x = Math.random() * 500;
+                        p.y = Math.random() * 500;
+                    }
                     self.toRemove = true;
                 }
             }
         }
         Bullet.list[self.id] = self;
-        initPack.bullet.push({
-            id:self.id,
-            x:self.x,
-            y:self.y,
-        });
+        self.getInitPack = function() {
+            return {
+                id:self.id,
+                x:self.x,
+                y:self.y,
+            };
+        }
+
+        self.getUpdatePack = function() {
+            return {
+                id:self.id,
+                x:self.x,
+                y:self.y,
+            };
+        }
+
+        initPack.bullet.push(self.getInitPack());
         return self;
     }
 
     Bullet.list = {};
 
+    Bullet.getAllInitPack = function(){
+        const bullets = [];
+        for(let i in Bullet.list){
+            bullets.push(Bullet.list[i].getInitPack());
+        }
+        return bullets;
+    }
     Bullet.update = function () {
         const pack = [];
         for (let i in Bullet.list) {
             let bullet = Bullet.list[i];
             bullet.update()
-            if(bullet.toRemove)
+            if (bullet.toRemove) {
                 delete Bullet.list[i];
                 removePack.bullet.push(bullet.id)
-            pack.push({
-                id: bullet.id,
-                x: bullet.x,
-                y: bullet.y,
-            });
+            }
+            pack.push(bullet.getUpdatePack());
         }
         return pack;
-    }
-
-    const USERS = {
-        "bob":"asd",
-        "bob2":"bob",
-        "bob3":"ttt"
     }
 
     async function isValidPassword(client, data) {
