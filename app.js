@@ -1,6 +1,20 @@
+/* Set up the environment */
+const ENV = "local";
+const DEBUG = true;
+
+let config;
+if (ENV === "local") {
+    config = require(__dirname + '\\server\\config.js');
+} else if (ENV === "prod") {
+    config = {
+        user:process.env.MONGO_USER,
+        password:process.env.MONGO_PASSWORD,
+        cluster:process.env.MONGO_CLUSTER,
+    }
+}
+
 /* Prep connection details for mongoDB */
 const MongoClient = require('mongodb').MongoClient;
-const config = require(__dirname + '\\server\\config.js');
 const uri = "mongodb+srv://" + config.user + ":" + config.password + "@" + config.cluster + "/myGame?retryWrites=true&w=majority";
 const client = new MongoClient(uri,  { useNewUrlParser: true, useUnifiedTopology: true});
 
@@ -14,7 +28,7 @@ app.get('/', function(req, res) {
 });
 app.use('/client', express.static(__dirname + '/client'));
 
-server.listen(2000);
+server.listen(process.env.PORT || 2000);
 console.log("Server started.");
 main().catch(console.error);
 
@@ -27,7 +41,6 @@ async function main(){
     }
 
     const SOCKET_LIST = {};
-    const DEBUG = true;
 
     const Entity = function(){
         const self = {
