@@ -1,6 +1,6 @@
 /* Set up the environment */
-const ENV = "local";
-const DEBUG = true;
+const ENV = "prod";
+const DEBUG = false;
 
 let config;
 if (ENV === "local") {
