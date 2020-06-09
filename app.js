@@ -22,6 +22,7 @@ const client = new MongoClient(uri,  { useNewUrlParser: true, useUnifiedTopology
 const express = require('express');
 const app = express();
 const server = require('http').Server(app);
+const io = require('socket.io')(server, {});
 
 app.get('/', function(req, res) {
     res.sendFile(__dirname + '/client/index.html');
@@ -29,8 +30,8 @@ app.get('/', function(req, res) {
 app.use('/client', express.static(__dirname + '/client'));
 server.listen(process.env.PORT || 2000);
 console.log("Server started.");
-main().catch(console.error);
 
+main().catch(console.error);
 async function main(){
     try {
         await client.connect();
@@ -283,7 +284,6 @@ async function main(){
         return res;
     }
 
-    const io = require('socket.io')(server, {});
     io.sockets.on('connection', function (socket) {
         socket.id = Math.random();
         SOCKET_LIST[socket.id] = socket;
